@@ -491,6 +491,7 @@ class HistoricoSOS extends StatelessWidget {
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('sos_eventos')
+              .orderBy('ativado_em', descending: true)
               .limit(5)
               .snapshots(),
           builder: (context, snapshot) {
