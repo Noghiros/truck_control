@@ -15,11 +15,11 @@ Projeto de controle remoto de caminhão que combina firmware ESP32 por BLE e apl
 
 ## 📸 Imagens do Projeto
 
-### Hardware ESP32
-![ESP32 Setup](ADIY-Nodemcu-ESP32D.jpeg)
-
 ### Aplicativo Flutter
-![Flutter App](Foto%20app.jpeg)
+<img src="Foto%20app.jpeg" alt="Flutter App" width="300">
+
+### Hardware ESP32
+<img src="ADIY-Nodemcu-ESP32D.jpeg" alt="ESP32 Setup" width="400">
 
 ## ⚙️ Funcionalidades
 
@@ -78,16 +78,33 @@ Projeto de controle remoto de caminhão que combina firmware ESP32 por BLE e apl
 5. Veja o sensor de ré atualizar cores/níveis.
 6. SOS gera evento em Firestore com data/hora.
 
+# Arquitetura
+```
+[ Flutter App ]  <--BLE-->  [ ESP32 ]
+       │                         │
+       │                         ├── LEDs RGB
+       │                         ├── Sensor HC-SR04
+       │                         └── Buzzer
+       │
+       └── Firebase (Firestore)
+```
+
 ## 🗂️ Estrutura do projeto
-.
-├── android/                # Configuração Android
-├── ios/                    # Configuração iOS
-├── lib/                    # Código Flutter
-│   └── main.dart
-├── ESP32/
-│   └── Radio_control.ino   # Firmware
-├── test/                   # Testes
-└── firebase_options.dart
+
+```
+truck_control/
+├── android/                    # Configurações nativas Android
+├── ios/                        # Configurações nativas iOS
+├── lib/                        # Código fonte Flutter
+│   ├── main.dart              # App principal
+│   └── firebase_options.dart  # Configuração Firebase
+├── ESP32/                      # Firmware ESP32
+│   └── Radio_control.ino      # Código do microcontrolador
+├── test/                       # Testes unitários Flutter
+├── pubspec.yaml               # Dependências Flutter
+├── firebase.json              # Configuração Firebase
+└── README.md                  # Este arquivo
+```
 
 ## 📝 Observações
 
