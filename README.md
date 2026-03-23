@@ -13,6 +13,14 @@ Projeto de controle remoto de caminhão que combina firmware ESP32 por BLE e apl
 - `lib/main.dart`: app Flutter com BLE usando `flutter_blue_plus`, integração Firebase e UI rápida.
 - `firebase_options.dart`: configuração de inicialização Firebase.
 
+## 📸 Imagens do Projeto
+
+### Hardware ESP32
+![ESP32 Setup](ADIY-Nodemcu-ESP32D.jpeg)
+
+### Aplicativo Flutter
+![Flutter App](Foto%20app.jpeg)
+
 ## ⚙️ Funcionalidades
 
 ### ESP32
