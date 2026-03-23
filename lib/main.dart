@@ -61,23 +61,23 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> toggleSOS() async {
   final novoEstado = !sosAtivo;
 
-  // Envia comando pro ESP32
+  // Atualiza UI imediatamente
+  setState(() => sosAtivo = novoEstado);
+
+  // Envia pro ESP32
   if (ledCharacteristic != null) {
     await ledCharacteristic!.write(
       'SOS:${novoEstado ? 1 : 0}'.codeUnits,
     );
   }
 
-  // Registra no Firebase se ativou
+  // Registra no Firebase em paralelo, sem travar a UI
   if (novoEstado) {
-    await FirebaseFirestore.instance.collection('sos_eventos').add({
+    FirebaseFirestore.instance.collection('sos_eventos').add({
       'ativado_em': DateTime.now().toIso8601String(),
       'dispositivo': device?.platformName ?? 'ESP32',
-    });
-    print('SOS registrado no Firebase!');
+    }); // sem await — não trava
   }
-
-  setState(() => sosAtivo = novoEstado);
 }
 
 
