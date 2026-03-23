@@ -201,7 +201,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 24),
             _secaoSOS(),
             const SizedBox(height: 24),
-            _secaoHistorico(),
+            const HistoricoSOS(),
           ],
         ),
       ),
@@ -470,77 +470,86 @@ Widget _secaoSOS() {
     ),
   );
 }
+}
 
-Widget _secaoHistorico() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        '📋 Histórico de SOS',
-        style: TextStyle(
-            color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-      ),
-      const SizedBox(height: 12),
-      StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('sos_eventos')
-            .orderBy('ativado_em', descending: true)
-            .limit(5)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-                child: CircularProgressIndicator(color: Colors.orange));
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+class HistoricoSOS extends StatelessWidget {
+  const HistoricoSOS({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '📋 Histórico de SOS',
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('sos_eventos')
+              .limit(5)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                  child: CircularProgressIndicator(color: Colors.orange));
+            }
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF16213E),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Nenhum SOS registrado ainda.',
+                  style: TextStyle(color: Colors.white38),
+                ),
+              );
+            }
+
             return Container(
-              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFF16213E),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Text(
-                'Nenhum SOS registrado ainda.',
-                style: TextStyle(color: Colors.white38),
+              child: Column(
+                children: snapshot.data!.docs.asMap().entries.map((entry) {
+                  final data = entry.value.data() as Map<String, dynamic>;
+                  final hora = data['ativado_em'] ?? '';
+                  final dispositivo = data['dispositivo'] ?? 'ESP32';
+                  return Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.warning_rounded,
+                            color: Colors.red, size: 20),
+                        title: Text(
+                          hora.length > 19
+                              ? hora.substring(0, 19).replaceAll('T', ' ')
+                              : hora,
+                          style: const TextStyle(
+                              color: Colors.white, fontSize: 13),
+                        ),
+                        subtitle: Text(
+                          dispositivo,
+                          style: const TextStyle(
+                              color: Colors.white38, fontSize: 11),
+                        ),
+                      ),
+                      if (entry.key < snapshot.data!.docs.length - 1)
+                        Divider(color: Colors.white12, height: 1),
+                    ],
+                  );
+                }).toList(),
               ),
             );
-          }
-
-          return Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFF16213E),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: snapshot.data!.docs.length,
-              separatorBuilder: (_, __) =>
-                  Divider(color: Colors.white12, height: 1),
-              itemBuilder: (context, index) {
-                final doc = snapshot.data!.docs[index];
-                final data = doc.data() as Map<String, dynamic>;
-                final hora = data['ativado_em'] ?? '';
-                final dispositivo = data['dispositivo'] ?? 'ESP32';
-                return ListTile(
-                  leading: const Icon(Icons.warning_rounded,
-                      color: Colors.red, size: 20),
-                  title: Text(
-                    hora.length > 19 ? hora.substring(0, 19).replaceAll('T', ' ') : hora,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                  ),
-                  subtitle: Text(
-                    dispositivo,
-                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
-    ],
-  );
-}
-
+          },
+        ),
+      ],
+    );
+  }
 }
