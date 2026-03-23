@@ -54,13 +54,23 @@ const int TOTAL_SINAIS = sizeof(sequenciaSOS) / sizeof(sequenciaSOS[0]);
 
 int sosIndex = 0;
 unsigned long sosUltimoMillis = 0;
+bool sosJaDesligado = true;
 
 void atualizarSOS() {
   if (!sosAtivo) {
-    // Desliga tudo se SOS foi cancelado
-    sosIndex = 0;
+    if (!sosJaDesligado) {  // só executa uma vez ao desativar
+      digitalWrite(LED_VERMELHO, LOW);
+      digitalWrite(LED_VERDE, LOW);
+      digitalWrite(LED_AZUL, LOW);
+      noTone(BUZZER);
+      sosIndex = 0;
+      sosUltimoMillis = 0;
+      sosJaDesligado = true;
+    }
     return;
   }
+
+  sosJaDesligado = false; // SOS ativo, permite desligar depois
 
   unsigned long agora = millis();
   Sinal atual = sequenciaSOS[sosIndex];
@@ -71,17 +81,18 @@ void atualizarSOS() {
 
     if (atual.ligado) {
       digitalWrite(LED_VERMELHO, HIGH);
-      digitalWrite(LED_VERDE, HIGH);
-      digitalWrite(LED_AZUL, HIGH);
+      digitalWrite(LED_VERDE, HIGH);    // adiciona
+      digitalWrite(LED_AZUL, HIGH);     // adiciona
       tone(BUZZER, 1000);
     } else {
       digitalWrite(LED_VERMELHO, LOW);
-      digitalWrite(LED_VERDE, LOW);
-      digitalWrite(LED_AZUL, LOW);
+      digitalWrite(LED_VERDE, LOW);     // adiciona
+      digitalWrite(LED_AZUL, LOW);      // adiciona
       noTone(BUZZER);
     }
   }
 }
+
 
 // --- Mede distância ---
 float medirDistancia() {
@@ -154,7 +165,15 @@ class LedCallbacks : public BLECharacteristicCallbacks {
     if (valor == "LED:AZUL:1")     digitalWrite(LED_AZUL, HIGH);
     if (valor == "LED:AZUL:0")     digitalWrite(LED_AZUL, LOW);
     if (valor == "SOS:1") { sosAtivo = true;  Serial.println("SOS ATIVADO!"); }
-    if (valor == "SOS:0") { sosAtivo = false; Serial.println("SOS DESATIVADO!"); }
+    if (valor == "SOS:0") { 
+      sosAtivo = false;
+      sosJaDesligado = false; 
+      noTone(BUZZER);
+      digitalWrite(LED_VERMELHO, LOW);
+      digitalWrite(LED_VERDE, LOW);
+      digitalWrite(LED_AZUL, LOW);
+      Serial.println("SOS DESATIVADO!"); 
+    }
   }
 };
 
