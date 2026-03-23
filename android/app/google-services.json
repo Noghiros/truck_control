@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "917680712918",
+    "project_id": "truck-control-scs",
+    "storage_bucket": "truck-control-scs.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:917680712918:android:bd32f5ce31e509146e6d77",
+        "android_client_info": {
+          "package_name": "com.example.radio_control"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTzIYeiJHuDfw6rUO211sTfKjNQGudIXc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

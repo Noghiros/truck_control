@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -48,6 +55,31 @@ class _HomeScreenState extends State<HomeScreen> {
   static const String UUID_SERVICE   = '12345678-1234-1234-1234-123456789abc';
   static const String UUID_LED       = 'abcdefab-1234-1234-1234-abcdefabcdef';
   static const String UUID_DISTANCIA = 'abcdefef-1234-1234-1234-abcdefabcdef';
+
+  // --- Firestore: SOS ---
+  bool sosAtivo = false;
+  Future<void> toggleSOS() async {
+  final novoEstado = !sosAtivo;
+
+  // Envia comando pro ESP32
+  if (ledCharacteristic != null) {
+    await ledCharacteristic!.write(
+      'SOS:${novoEstado ? 1 : 0}'.codeUnits,
+    );
+  }
+
+  // Registra no Firebase se ativou
+  if (novoEstado) {
+    await FirebaseFirestore.instance.collection('sos_eventos').add({
+      'ativado_em': DateTime.now().toIso8601String(),
+      'dispositivo': device?.platformName ?? 'ESP32',
+    });
+    print('SOS registrado no Firebase!');
+  }
+
+  setState(() => sosAtivo = novoEstado);
+}
+
 
   // --- Cor do sensor de ré ---
   Color get corDistancia {
@@ -166,6 +198,10 @@ class _HomeScreenState extends State<HomeScreen> {
             _secaoSensorRe(),
             const SizedBox(height: 24),
             _secaoLeds(),
+            const SizedBox(height: 24),
+            _secaoSOS(),
+            const SizedBox(height: 24),
+            _secaoHistorico(),
           ],
         ),
       ),
@@ -388,4 +424,123 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+// --- Widget: SOS ---
+Widget _secaoSOS() {
+  return GestureDetector(
+    onTap: conectado ? toggleSOS : null,
+    child: AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: sosAtivo ? Colors.red : const Color(0xFF16213E),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: sosAtivo ? Colors.red : Colors.red.withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: sosAtivo
+            ? [BoxShadow(color: Colors.red.withOpacity(0.5), blurRadius: 30)]
+            : [],
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.warning_rounded,
+            color: sosAtivo ? Colors.white : Colors.red,
+            size: 48,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            sosAtivo ? 'SOS ATIVO — Toque para cancelar' : 'SOS',
+            style: TextStyle(
+              color: sosAtivo ? Colors.white : Colors.red,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (!conectado)
+            const Text(
+              'Conecte ao ESP32 para usar',
+              style: TextStyle(color: Colors.white38, fontSize: 12),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+Widget _secaoHistorico() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        '📋 Histórico de SOS',
+        style: TextStyle(
+            color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 12),
+      StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('sos_eventos')
+            .orderBy('ativado_em', descending: true)
+            .limit(5)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+                child: CircularProgressIndicator(color: Colors.orange));
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF16213E),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Nenhum SOS registrado ainda.',
+                style: TextStyle(color: Colors.white38),
+              ),
+            );
+          }
+
+          return Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF16213E),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: snapshot.data!.docs.length,
+              separatorBuilder: (_, __) =>
+                  Divider(color: Colors.white12, height: 1),
+              itemBuilder: (context, index) {
+                final doc = snapshot.data!.docs[index];
+                final data = doc.data() as Map<String, dynamic>;
+                final hora = data['ativado_em'] ?? '';
+                final dispositivo = data['dispositivo'] ?? 'ESP32';
+                return ListTile(
+                  leading: const Icon(Icons.warning_rounded,
+                      color: Colors.red, size: 20),
+                  title: Text(
+                    hora.length > 19 ? hora.substring(0, 19).replaceAll('T', ' ') : hora,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                  ),
+                  subtitle: Text(
+                    dispositivo,
+                    style: const TextStyle(color: Colors.white38, fontSize: 11),
+                  ),
+                );
+              },
+            ),
+          );
+        },
+      ),
+    ],
+  );
+}
+
 }
